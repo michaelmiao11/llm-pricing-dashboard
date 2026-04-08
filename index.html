@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Spend Impact — EF vs. Pricing v2</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e2e4ea;--muted:#8b8fa3;--accent:#6366f1;--accent2:#22d3ee;--green:#22c55e;--red:#ef4444;--orange:#f59e0b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:24px;min-height:100vh}
+  h1{font-size:1.6rem;font-weight:700;margin-bottom:4px}
+  .subtitle{color:var(--muted);font-size:.88rem;margin-bottom:28px}
+  .grid{display:grid;gap:20px}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:1fr 1fr 1fr}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .card h2{font-size:1rem;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .dot-ef{background:var(--accent)}
+  .dot-v2{background:var(--accent2)}
+  label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+  input[type=range]{width:100%;accent-color:var(--accent);margin:4px 0 2px}
+  .val{font-size:1.05rem;font-weight:600;color:var(--text)}
+  .slider-row{margin-bottom:16px}
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .kpi{background:#12141c;border-radius:8px;padding:14px;text-align:center}
+  .kpi .num{font-size:1.55rem;font-weight:700}
+  .kpi .lbl{font-size:.72rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+  .kpi.green .num{color:var(--green)}
+  .kpi.red .num{color:var(--red)}
+  .kpi.accent .num{color:var(--accent)}
+  .kpi.cyan .num{color:var(--accent2)}
+  .kpi.orange .num{color:var(--orange)}
+  .chart-wrap{position:relative;height:300px}
+  .chart-wrap-tall{height:380px}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th{text-align:left;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--border);text-transform:uppercase;font-size:.72rem;letter-spacing:.4px}
+  td{padding:8px 10px;border-bottom:1px solid #1e2130}
+  tr:hover td{background:#1e2130}
+  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:600}
+  .tag-green{background:#22c55e22;color:var(--green)}
+  .tag-red{background:#ef444422;color:var(--red)}
+  @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<h1>📊 LLM Spend Impact Calculator</h1>
+<p class="subtitle">Enterprise Flex vs. Pricing v2 (Subscription) — Adjust parameters to model total cost per user per month</p>
+
+<!-- KPI Row -->
+<div class="grid grid-4" style="margin-bottom:20px" id="kpiRow">
+  <div class="kpi accent"><div class="num" id="kpiEF">$56.00</div><div class="lbl">EF Total PUPM</div></div>
+  <div class="kpi cyan"><div class="num" id="kpiV2">$47.00</div><div class="lbl">v2 Total PUPM</div></div>
+  <div class="kpi green"><div class="num" id="kpiSave">$9.00</div><div class="lbl">v2 Savings</div></div>
+  <div class="kpi orange"><div class="num" id="kpiBE">—</div><div class="lbl">Breakeven LLM Cost</div></div>
+</div>
+
+<div class="grid grid-2">
+  <!-- LEFT: Controls -->
+  <div>
+    <!-- Shared Parameters -->
+    <div class="card" style="margin-bottom:20px">
+      <h2>⚙️ Shared Parameters</h2>
+      <div class="slider-row">
+        <label>Monthly LLM Cost per User <span class="val" id="vLLM">$15.00</span></label>
+        <input type="range" id="sLLM" min="1" max="60" step="0.5" value="15">
+      </div>
+      <div class="slider-row">
+        <label>Billable % of LLM Spend <span class="val" id="vBill">80%</span></label>
+        <input type="range" id="sBill" min="50" max="100" step="1" value="80">
+      </div>
+      <div class="slider-row">
+        <label>Credits Consumed per User <span class="val" id="vCons">600</span></label>
+        <input type="range" id="sCons" min="0" max="2000" step="10" value="600">
+      </div>
+    </div>
+    <!-- EF Parameters -->
+    <div class="card" style="margin-bottom:20px">
+      <h2><span class="dot dot-ef"></span>Enterprise Flex Parameters</h2>
+      <div class="slider-row">
+        <label>EF PUPM <span class="val" id="vPUPM">$40.00</span></label>
+        <input type="range" id="sPUPM" min="20" max="80" step="1" value="40">
+      </div>
+      <div class="slider-row">
+        <label>Base $/Credit (Granted) <span class="val" id="vBase">$0.10</span></label>
+        <input type="range" id="sBase" min="0.02" max="0.20" step="0.01" value="0.10">
+      </div>
+      <div class="slider-row">
+        <label>Overage $/Credit <span class="val" id="vOver">$0.08</span></label>
+        <input type="range" id="sOver" min="0.02" max="0.20" step="0.01" value="0.08">
+      </div>
+      <div class="slider-row">
+        <label>Base Credits Granted <span class="val" id="vGrant">400</span></label>
+        <input type="range" id="sGrant" min="100" max="1500" step="10" value="400">
+      </div>
+    </div>
+    <!-- V2 Parameters -->
+    <div class="card">
+      <h2><span class="dot dot-v2"></span>Pricing v2 Parameters</h2>
+      <div class="slider-row">
+        <label>v2 Platform Fee PUPM <span class="val" id="vPlat">$32.00</span></label>
+        <input type="range" id="sPlat" min="15" max="60" step="1" value="32">
+      </div>
+      <div class="slider-row">
+        <label>Model Hub Fee % <span class="val" id="vHub">0%</span></label>
+        <input type="range" id="sHub" min="0" max="30" step="1" value="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Charts -->
+  <div>
+    <div class="card" style="margin-bottom:20px">
+      <h2>💰 Total Cost Breakdown (Current Settings)</h2>
+      <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>📈 Total Cost vs. LLM Spend Curve</h2>
+      <div class="chart-wrap chart-wrap-tall"><canvas id="chartLine"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Sensitivity Table -->
+<div class="card" style="margin-top:20px">
+  <h2>🔍 Sensitivity Table — Total PUPM at Various LLM Spend Levels</h2>
+  <div style="overflow-x:auto">
+    <table id="sensTable">
+      <thead>
+        <tr><th>LLM Cost</th><th>EF Base</th><th>EF Overage</th><th>EF Total</th><th>v2 Platform</th><th>v2 LLM</th><th>v2 Total</th><th>Δ (v2 − EF)</th><th>Winner</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Margin Chart -->
+<div class="grid grid-2" style="margin-top:20px">
+  <div class="card">
+    <h2>🏦 Glean Margin per User (Current Settings)</h2>
+    <div class="chart-wrap"><canvas id="chartMargin"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>📊 Cost Component Waterfall</h2>
+    <div class="chart-wrap"><canvas id="chartWaterfall"></canvas></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = v => '$' + v.toFixed(2);
+const pct = v => v.toFixed(0) + '%';
+
+// Chart instances
+let barChart, lineChart, marginChart, waterfallChart;
+
+function calc() {
+  const llm = +$('sLLM').value;
+  const billPct = +$('sBill').value / 100;
+  const consumed = +$('sCons').value;
+  const pupm = +$('sPUPM').value;
+  const baseRate = +$('sBase').value;
+  const overRate = +$('sOver').value;
+  const granted = +$('sGrant').value;
+  const platFee = +$('sPlat').value;
+  const hubPct = +$('sHub').value / 100;
+
+  // Update labels
+  $('vLLM').textContent = fmt(llm);
+  $('vBill').textContent = pct(+$('sBill').value);
+  $('vCons').textContent = consumed;
+  $('vPUPM').textContent = fmt(pupm);
+  $('vBase').textContent = fmt(baseRate);
+  $('vOver').textContent = fmt(overRate);
+  $('vGrant').textContent = granted;
+  $('vPlat').textContent = fmt(platFee);
+  $('vHub').textContent = pct(+$('sHub').value);
+
+  // --- EF Model ---
+  const billableLLM = llm * billPct;
+  const overageCredits = Math.max(0, consumed - granted);
+  const overageCost = overageCredits * overRate;
+  const efTotal = pupm + overageCost;
+
+  // --- v2 Model ---
+  const hubFee = llm * hubPct;
+  const v2Total = platFee + llm + hubFee;
+
+  // --- KPIs ---
+  $('kpiEF').textContent = fmt(efTotal);
+  $('kpiV2').textContent = fmt(v2Total);
+  const diff = efTotal - v2Total;
+  $('kpiSave').textContent = (diff >= 0 ? '+' : '') + fmt(Math.abs(diff));
+  $('kpiSave').parentElement.className = diff >= 0 ? 'kpi green' : 'kpi red';
+  $('kpiSave').nextElementSibling.textContent = diff >= 0 ? 'v2 Savings' : 'v2 Premium';
+
+  // breakeven: find LLM cost where EF == v2
+  // efTotal = pupm + max(0, consumed - granted)*overRate  (constant wrt llm)
+  // v2Total = platFee + llm + llm*hubPct = platFee + llm*(1+hubPct)
+  // set equal: pupm + overageCost = platFee + llm_be*(1+hubPct)
+  // llm_be = (pupm + overageCost - platFee) / (1 + hubPct)
+  const llmBE = (pupm + overageCost - platFee) / (1 + hubPct);
+  $('kpiBE').textContent = llmBE > 0 ? fmt(llmBE) : 'N/A';
+
+  // --- Bar Chart ---
+  const barData = {
+    labels: ['Enterprise Flex', 'Pricing v2'],
+    datasets: [
+      {label:'Platform/Base Fee', data:[pupm, platFee], backgroundColor:'#6366f1', borderRadius:4},
+      {label:'Overage Cost', data:[overageCost, 0], backgroundColor:'#f59e0b', borderRadius:4},
+      {label:'LLM Pass-through', data:[0, llm], backgroundColor:'#22d3ee', borderRadius:4},
+      {label:'Model Hub Fee', data:[0, hubFee], backgroundColor:'#a78bfa', borderRadius:4},
+    ]
+  };
+  if(barChart) barChart.destroy();
+  barChart = new Chart($('chartBar'), {type:'bar', data:barData, options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#8b8fa3',font:{size:11}}},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+    scales:{x:{stacked:true,ticks:{color:'#8b8fa3'},grid:{display:false}},
+            y:{stacked:true,ticks:{color:'#8b8fa3',callback:v=>'$'+v},grid:{color:'#2a2d3a'}}}
+  }});
+
+  // --- Line Chart: Total cost vs LLM spend ---
+  const llmRange = Array.from({length:61}, (_,i) => i);
+  const efLine = llmRange.map(() => pupm + overageCost); // EF total doesn't change with LLM spend directly (it's credit-based)
+  const v2Line = llmRange.map(l => platFee + l + l * hubPct);
+
+  if(lineChart) lineChart.destroy();
+  lineChart = new Chart($('chartLine'), {type:'line', data:{
+    labels: llmRange.map(l=>'$'+l),
+    datasets:[
+      {label:'Enterprise Flex', data:efLine, borderColor:'#6366f1', backgroundColor:'#6366f133', fill:true, tension:.3, pointRadius:0},
+      {label:'Pricing v2', data:v2Line, borderColor:'#22d3ee', backgroundColor:'#22d3ee22', fill:true, tension:.3, pointRadius:0},
+    ]
+  }, options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#8b8fa3'}},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)},mode:'index',intersect:false},
+      annotation:llmBE>0&&llmBE<=60?{annotations:{line1:{type:'line',xMin:llmBE,xMax:llmBE,borderColor:'#f59e0b88',borderWidth:2,borderDash:[6,3]}}}:{}},
+    scales:{x:{title:{display:true,text:'Monthly LLM Cost per User',color:'#8b8fa3'},ticks:{color:'#8b8fa3',maxTicksLimit:12},grid:{display:false}},
+            y:{title:{display:true,text:'Total PUPM',color:'#8b8fa3'},ticks:{color:'#8b8fa3',callback:v=>'$'+v},grid:{color:'#2a2d3a'}}}
+  }});
+
+  // --- Margin Chart ---
+  const gleanRawCost = 0.02;
+  const efRevenue = efTotal;
+  const efCOGS = consumed * gleanRawCost;
+  const efMargin = efRevenue - efCOGS;
+  const v2Revenue = v2Total;
+  const v2COGS = llm; // pass-through LLM is the cost
+  const v2Margin = v2Revenue - v2COGS;
+
+  if(marginChart) marginChart.destroy();
+  marginChart = new Chart($('chartMargin'), {type:'bar', data:{
+    labels:['Enterprise Flex','Pricing v2'],
+    datasets:[
+      {label:'Revenue (PUPM)', data:[efRevenue, v2Revenue], backgroundColor:['#6366f1','#22d3ee'], borderRadius:4},
+      {label:'LLM COGS', data:[efCOGS, llm], backgroundColor:['#6366f166','#22d3ee66'], borderRadius:4},
+    ]
+  }, options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#8b8fa3'}},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+    scales:{x:{ticks:{color:'#8b8fa3'},grid:{display:false}},
+            y:{ticks:{color:'#8b8fa3',callback:v=>'$'+v},grid:{color:'#2a2d3a'}}}
+  }});
+
+  // --- Waterfall Chart ---
+  const wLabels = ['EF Base','+ Overage','= EF Total','v2 Platform','+ LLM','+ Hub Fee','= v2 Total'];
+  const wData = [pupm, overageCost, efTotal, platFee, llm, hubFee, v2Total];
+  const wColors = ['#6366f1','#f59e0b','#6366f1','#22d3ee','#22d3ee','#a78bfa','#22d3ee'];
+  const wAlpha = [1,1,.6,1,1,1,.6];
+
+  if(waterfallChart) waterfallChart.destroy();
+  waterfallChart = new Chart($('chartWaterfall'), {type:'bar', data:{
+    labels:wLabels,
+    datasets:[{data:wData, backgroundColor:wColors.map((c,i)=>c+(wAlpha[i]<1?'99':'')), borderRadius:4}]
+  }, options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
+    scales:{x:{ticks:{color:'#8b8fa3',font:{size:10}},grid:{display:false}},
+            y:{ticks:{color:'#8b8fa3',callback:v=>'$'+v},grid:{color:'#2a2d3a'}}}
+  }});
+
+  // --- Sensitivity Table ---
+  const tbody = $('sensTable').querySelector('tbody');
+  tbody.innerHTML = '';
+  [2,5,8,10,12,15,20,25,30,40,50,60].forEach(l => {
+    const eT = pupm + overageCost;
+    const vT = platFee + l + l * hubPct;
+    const d = vT - eT;
+    const winner = d < 0 ? 'v2' : d > 0 ? 'EF' : 'Tie';
+    const cls = d < 0 ? 'tag-green' : d > 0 ? 'tag-red' : '';
+    tbody.innerHTML += `<tr>
+      <td>${fmt(l)}</td>
+      <td>${fmt(pupm)}</td><td>${fmt(overageCost)}</td><td><strong>${fmt(eT)}</strong></td>
+      <td>${fmt(platFee)}</td><td>${fmt(l + l*hubPct)}</td><td><strong>${fmt(vT)}</strong></td>
+      <td style="color:${d<=0?'#22c55e':'#ef4444'}">${(d>=0?'+':'')+fmt(d)}</td>
+      <td><span class="tag ${cls}">${winner}</span></td>
+    </tr>`;
+  });
+}
+
+// Attach listeners
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('input', calc));
+calc();
+</script>
+</body>
+</html>

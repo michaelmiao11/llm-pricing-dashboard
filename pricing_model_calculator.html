@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing Model Calculator</title>
+  <style>
+    :root{
+      --bg:#f5f5f7;
+      --panel:rgba(255,255,255,.82);
+      --text:#1d1d1f;
+      --muted:#6e6e73;
+      --line:rgba(0,0,0,.08);
+      --blue:#0071e3;
+      --green:#1f8f5f;
+      --red:#d74f4f;
+      --shadow:0 1px 3px rgba(0,0,0,.08),0 18px 48px rgba(0,0,0,.06);
+      --radius:20px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .shell{
+      max-width:1140px;
+      margin:0 auto;
+      padding:36px 22px 72px;
+    }
+    .panel{
+      background:var(--panel);
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+      border:1px solid rgba(255,255,255,.75);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .hero{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:20px;
+      margin-bottom:20px;
+    }
+    .hero-main,.hero-side,.chart-card,.summary-card,.metric,.control{
+      padding:24px;
+    }
+    .eyebrow{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+    h1{
+      margin:0;
+      font-size:clamp(30px,5vw,42px);
+      line-height:1.04;
+      letter-spacing:-.03em;
+    }
+    .sub{
+      margin:12px 0 0;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.55;
+      max-width:58ch;
+    }
+    .winner{
+      font-size:28px;
+      font-weight:700;
+      line-height:1.1;
+      letter-spacing:-.03em;
+      margin:0 0 10px;
+    }
+    .note{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.5;
+    }
+    .delta{
+      font-size:40px;
+      font-weight:700;
+      letter-spacing:-.04em;
+      margin:18px 0 6px;
+    }
+    .controls{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:16px;
+    }
+    .control{
+      background:rgba(255,255,255,.74);
+      border:1px solid rgba(255,255,255,.8);
+    }
+    .control label{
+      display:block;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+    .control input{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:12px 13px;
+      font:inherit;
+      color:var(--text);
+      outline:none;
+    }
+    .control input:focus{
+      border-color:rgba(0,113,227,.45);
+      box-shadow:0 0 0 3px rgba(0,113,227,.18);
+    }
+    .slider{
+      grid-column:1 / -1;
+    }
+    .slider-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:end;
+      gap:16px;
+      margin-bottom:14px;
+    }
+    .slider-value{
+      font-size:34px;
+      font-weight:700;
+      letter-spacing:-.04em;
+      line-height:1;
+    }
+    input[type="range"]{
+      width:100%;
+      appearance:none;
+      height:6px;
+      border:none;
+      border-radius:999px;
+      background:linear-gradient(90deg,rgba(0,113,227,.95),rgba(0,113,227,.35));
+      outline:none;
+      padding:0;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      appearance:none;
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      background:#fff;
+      border:1px solid rgba(0,0,0,.08);
+      box-shadow:0 4px 16px rgba(0,0,0,.16);
+      cursor:pointer;
+    }
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:16px;
+      margin:16px 0 22px;
+    }
+    .metric-label{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:12px;
+    }
+    .metric-value{
+      font-size:32px;
+      font-weight:700;
+      letter-spacing:-.04em;
+      line-height:1.05;
+      margin-bottom:8px;
+    }
+    .metric-note{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+    .main{
+      display:grid;
+      grid-template-columns:1.3fr .7fr;
+      gap:20px;
+    }
+    .section-title{
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin:0 0 14px;
+    }
+    .chart-shell{
+      border:1px solid rgba(0,0,0,.05);
+      border-radius:16px;
+      background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.92));
+      padding:14px;
+      overflow:hidden;
+    }
+    .chart-meta,.legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .legend{margin-top:12px;font-size:12px}
+    .swatch{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+      margin-right:8px;
+      vertical-align:-1px;
+    }
+    .summary-list{
+      display:grid;
+      gap:12px;
+    }
+    .item{
+      padding:16px 18px;
+      border-radius:16px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(0,0,0,.05);
+    }
+    .k{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:7px;
+    }
+    .v{
+      font-size:20px;
+      font-weight:650;
+      letter-spacing:-.02em;
+      line-height:1.25;
+    }
+    .s{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+    .formula{
+      margin-top:16px;
+      padding:16px 18px;
+      border-radius:16px;
+      background:#1d1d1f;
+      color:rgba(255,255,255,.92);
+      font-size:13px;
+      line-height:1.65;
+      overflow:auto;
+    }
+    .formula code{
+      color:#fff;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .foot{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+    @media (max-width:980px){
+      .hero,.main{grid-template-columns:1fr}
+      .controls,.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width:640px){
+      .shell{padding:20px 14px 52px}
+      .controls,.metrics{grid-template-columns:1fr}
+      .slider-top{flex-direction:column;align-items:start}
+    }
+    @media print {
+      @page {
+        margin: 0;
+        size: 8.5in 999in;
+      }
+      body {
+        margin: 0;
+        padding: 0.4in 0.6in;
+        background: #fff;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      .container, .dashboard, .shell, main {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      section, [class*="section"], .header {
+        margin-bottom: 20px !important;
+      }
+      [class*="card"], [class*="Card"] {
+        padding: 18px !important;
+        box-shadow: none !important;
+        border: 1px solid rgba(0,0,0,0.08);
+      }
+      [class*="grid"], [class*="row"] {
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+      }
+      [class*="chart"], [class*="Chart"] {
+        height: 240px !important;
+      }
+      [class*="chart"][class*="tall"], [class*="Chart"][class*="tall"],
+      [class*="chart"][class*="full"], [class*="Chart"][class*="full"] {
+        height: 280px !important;
+      }
+      [class*="quote-list"], [class*="scroll"],
+      [style*="max-height"], [style*="overflow"] {
+        max-height: none !important;
+        overflow: visible !important;
+      }
+      [class*="tab-panel"], [class*="tabpanel"] {
+        display: block !important;
+      }
+      [class*="tab-bar"], [class*="tabs"]:not([class*="panel"]) {
+        display: none !important;
+      }
+      [class*="fade"], [class*="animate"], [class*="slide"] {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      button, [role="button"], .interactive-only {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="panel hero-main">
+        <div class="eyebrow">Pricing model calculator</div>
+        <h1>Which model is cheaper as monthly LLM use changes?</h1>
+        <p class="sub">This translates the workbook logic into an interactive calculator and line chart. Adjust the raw monthly LLM cost per seat, or change the assumptions, and the chart updates instantly.</p>
+      </div>
+      <div class="panel hero-side">
+        <div class="eyebrow">Current scenario</div>
+        <p class="winner" id="winnerText">Pricing v2 is cheaper</p>
+        <p class="note" id="winnerNote">At the current usage level, this model has the lower monthly per-seat cost.</p>
+        <p class="delta" id="deltaText">-$5.00</p>
+        <p class="note" id="deltaNote">Pricing v2 total minus Enterprise Flex total, per seat per month.</p>
+      </div>
+    </section>
+
+    <section class="controls">
+      <div class="panel control slider">
+        <div class="slider-top">
+          <div>
+            <div class="eyebrow">Monthly raw LLM cost per seat</div>
+            <div class="slider-value" id="sliderValue">$15.00</div>
+          </div>
+          <div class="note">Default values mirror the workbook. This chart uses the per-seat monthly view and also rolls up to account monthly and annual impact.</div>
+        </div>
+        <input id="llmSlider" type="range" min="0" max="40" step="0.1" value="15" />
+      </div>
+
+      <div class="control">
+        <label for="seats">Seats</label>
+        <input id="seats" type="number" min="1" step="1" value="1000" />
+      </div>
+      <div class="control">
+        <label for="billablePct">Billable share %</label>
+        <input id="billablePct" type="number" min="0" max="100" step="1" value="80" />
+      </div>
+      <div class="control">
+        <label for="efPupm">Enterprise Flex PUPM</label>
+        <input id="efPupm" type="number" min="0" step="0.01" value="40" />
+      </div>
+      <div class="control">
+        <label for="v2Platform">Pricing v2 platform fee</label>
+        <input id="v2Platform" type="number" min="0" step="0.01" value="32" />
+      </div>
+      <div class="control">
+        <label for="baseCreditRate">Base $ / credit</label>
+        <input id="baseCreditRate" type="number" min="0.001" step="0.001" value="0.10" />
+      </div>
+      <div class="control">
+        <label for="overageCreditRate">Overage $ / credit</label>
+        <input id="overageCreditRate" type="number" min="0" step="0.001" value="0.06" />
+      </div>
+      <div class="control">
+        <label for="rawCostPerCredit">Raw LLM cost / credit</label>
+        <input id="rawCostPerCredit" type="number" min="0.001" step="0.001" value="0.02" />
+      </div>
+      <div class="control">
+        <label for="modelHubFee">Model hub fee %</label>
+        <input id="modelHubFee" type="number" min="0" max="100" step="1" value="0" />
+      </div>
+    </section>
+
+    <section class="metrics">
+      <div class="panel metric">
+        <div class="metric-label">Enterprise Flex</div>
+        <div class="metric-value" id="efSeatCost">$52.00</div>
+        <div class="metric-note" id="efDetail">$40.00 base + $12.00 overage per seat monthly</div>
+      </div>
+      <div class="panel metric">
+        <div class="metric-label">Pricing v2</div>
+        <div class="metric-value" id="v2SeatCost">$47.00</div>
+        <div class="metric-note" id="v2Detail">$32.00 platform + $15.00 usage per seat monthly</div>
+      </div>
+      <div class="panel metric">
+        <div class="metric-label">Monthly account delta</div>
+        <div class="metric-value" id="monthlyDelta">-$5,000</div>
+        <div class="metric-note">Pricing v2 total minus Enterprise Flex total for the full account</div>
+      </div>
+      <div class="panel metric">
+        <div class="metric-label">Annualized delta</div>
+        <div class="metric-value" id="annualDelta">-$60,000</div>
+        <div class="metric-note">Annual account-level difference at the current usage point</div>
+      </div>
+    </section>
+
+    <section class="main">
+      <div class="panel chart-card">
+        <div class="section-title">Cost curve</div>
+        <div class="chart-meta">
+          <span id="rangeLabel">Chart range: $0 to $40 monthly LLM cost per seat</span>
+          <span id="crossSummary">Breakpoints update automatically</span>
+        </div>
+        <div class="chart-shell chart full">
+          <svg id="chart" viewBox="0 0 760 420" width="100%" height="420" aria-label="Pricing model chart"></svg>
+        </div>
+        <div class="legend">
+          <span><i class="swatch" style="background:#0071e3"></i>Enterprise Flex</span>
+          <span><i class="swatch" style="background:#1f8f5f"></i>Pricing v2</span>
+          <span><i class="swatch" style="background:#d74f4f"></i>Current usage marker</span>
+        </div>
+      </div>
+
+      <div class="panel summary-card">
+        <div class="section-title">Key takeaways</div>
+        <div class="summary-list">
+          <div class="item">
+            <div class="k">Cheaper right now</div>
+            <div class="v" id="cheaperNow">Pricing v2</div>
+            <div class="s" id="cheaperNowSub">This flips as you move usage or change assumptions.</div>
+          </div>
+          <div class="item">
+            <div class="k">EF overages begin</div>
+            <div class="v" id="overageStart">$10.00</div>
+            <div class="s">Monthly raw LLM cost per seat where included credits are exhausted.</div>
+          </div>
+          <div class="item">
+            <div class="k">Crossover zone</div>
+            <div class="v" id="breakpoints">$8.00 to $11.43</div>
+            <div class="s">Range where the cheaper model changes under the current assumptions.</div>
+          </div>
+          <div class="item">
+            <div class="k">Included EF credits</div>
+            <div class="v" id="includedCredits">400</div>
+            <div class="s">Derived from Enterprise Flex PUPM ÷ base $ per credit.</div>
+          </div>
+        </div>
+
+        <div class="formula">
+          <div><code>billable = monthly_llm_cost × billable_share</code></div>
+          <div><code>credits_used = billable ÷ raw_cost_per_credit</code></div>
+          <div><code>included_credits = ef_pupm ÷ base_credit_rate</code></div>
+          <div><code>EF = ef_pupm + max(credits_used − included_credits, 0) × overage_rate</code></div>
+          <div><code>Pricing v2 = platform_fee + monthly_llm_cost × (1 + model_hub_fee)</code></div>
+        </div>
+        <div class="foot">Defaults load from the workbook assumptions, but all inputs are editable so you can test alternative structures.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function num(id) {
+      const v = parseFloat($(id).value);
+      if (Number.isNaN(v)) return 0;
+      return v;
+    }
+
+    function money(v, digits = 2) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      }).format(v);
+    }
+
+    function money0(v) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(v);
+    }
+
+    function whole(v) {
+      return new Intl.NumberFormat('en-US', {
+        maximumFractionDigits: 0
+      }).format(v);
+    }
+
+    function scenario(m) {
+      const seats = Math.max(num('seats'), 1);
+      const billablePct = Math.max(num('billablePct'), 0) / 100;
+      const efPupm = Math.max(num('efPupm'), 0);
+      const v2Platform = Math.max(num('v2Platform'), 0);
+      const baseCreditRate = Math.max(num('baseCreditRate'), 0.0001);
+      const overageCreditRate = Math.max(num('overageCreditRate'), 0);
+      const rawCostPerCredit = Math.max(num('rawCostPerCredit'), 0.0001);
+      const modelHubFee = Math.max(num('modelHubFee'), 0) / 100;
+
+      const includedCredits = efPupm / baseCreditRate;
+      const billable = m * billablePct;
+      const creditsUsed = billable / rawCostPerCredit;
+      const overageCredits = Math.max(creditsUsed - includedCredits, 0);
+      const efOverage = overageCredits * overageCreditRate;
+      const efSeatCost = efPupm + efOverage;
+      const v2SeatCost = v2Platform + m * (1 + modelHubFee);
+
+      return {
+        m,
+        seats,
+        efPupm,
+        v2Platform,
+        modelHubFee,
+        includedCredits,
+        overageCredits,
+        efOverage,
+        efSeatCost,
+        v2SeatCost,
+        monthlyDelta: (v2SeatCost - efSeatCost) * seats,
+        annualDelta: (v2SeatCost - efSeatCost) * seats * 12
+      };
+    }
+
+    function diffAt(m) {
+      const s = scenario(m);
+      return s.v2SeatCost - s.efSeatCost;
+    }
+
+    function overageStart() {
+      const billablePct = Math.max(num('billablePct'), 0) / 100;
+      const efPupm = Math.max(num('efPupm'), 0);
+      const baseCreditRate = Math.max(num('baseCreditRate'), 0.0001);
+      const rawCostPerCredit = Math.max(num('rawCostPerCredit'), 0.0001);
+      if (billablePct === 0) return Infinity;
+      const includedCredits = efPupm / baseCreditRate;
+      return includedCredits * rawCostPerCredit / billablePct;
+    }
+
+    function findCrossings(maxX = 40, step = 0.05) {
+      const roots = [];
+      let prevX = 0;
+      let prevY = diffAt(prevX);
+
+      for (let x = step; x <= maxX; x += step) {
+        const y = diffAt(x);
+
+        if (Math.abs(y) < 1e-9) roots.push(x);
+
+        const crossed = (prevY < 0 && y > 0) || (prevY > 0 && y < 0);
+        if (crossed) {
+          let lo = prevX;
+          let hi = x;
+          for (let i = 0; i < 32; i += 1) {
+            const mid = (lo + hi) / 2;
+            const mv = diffAt(mid);
+            const sameSide = (prevY <= 0 && mv <= 0) || (prevY >= 0 && mv >= 0);
+            if (sameSide) lo = mid;
+            else hi = mid;
+          }
+          roots.push((lo + hi) / 2);
+        }
+
+        prevX = x;
+        prevY = y;
+      }
+
+      const deduped = [];
+      for (const r of roots) {
+        if (deduped.length === 0 || Math.abs(r - deduped[deduped.length - 1]) > 0.15) {
+          deduped.push(r);
+        }
+      }
+      return deduped;
+    }
+
+    function winnerText(s) {
+      const d = s.v2SeatCost - s.efSeatCost;
+      if (Math.abs(d) < 0.005) {
+        return {
+          title: 'They are effectively tied',
+          note: 'At this usage level, the two models land at almost the same monthly per-seat cost.',
+          short: 'Tie'
+        };
+      }
+      if (d < 0) {
+        return {
+          title: 'Pricing v2 is cheaper',
+          note: 'Pricing v2 has the lower monthly per-seat cost at this usage level.',
+          short: 'Pricing v2'
+        };
+      }
+      return {
+        title: 'Enterprise Flex is cheaper',
+        note: 'Enterprise Flex has the lower monthly per-seat cost at this usage level.',
+        short: 'Enterprise Flex'
+      };
+    }
+
+    function drawChart(maxX = 40) {
+      const svg = $('chart');
+      const W = 760;
+      const H = 420;
+      const pad = { t: 18, r: 18, b: 46, l: 58 };
+      const plotW = W - pad.l - pad.r;
+      const plotH = H - pad.t - pad.b;
+
+      const points = [];
+      let maxY = 0;
+
+      for (let i = 0; i <= 120; i += 1) {
+        const x = (i / 120) * maxX;
+        const s = scenario(x);
+        points.push({ x, ef: s.efSeatCost, v2: s.v2SeatCost });
+        maxY = Math.max(maxY, s.efSeatCost, s.v2SeatCost);
+      }
+
+      maxY = Math.max(60, Math.ceil(maxY / 10) * 10);
+
+      const xScale = (x) => pad.l + (x / maxX) * plotW;
+      const yScale = (y) => pad.t + plotH - (y / maxY) * plotH;
+
+      function pathFor(key) {
+        return points.map((p, i) => {
+          const prefix = i === 0 ? 'M' : 'L';
+          return prefix + ' ' + xScale(p.x).toFixed(2) + ' ' + yScale(p[key]).toFixed(2);
+        }).join(' ');
+      }
+
+      const grid = [];
+      for (let y = 0; y <= maxY; y += 10) {
+        grid.push('<line x1="' + pad.l + '" y1="' + yScale(y) + '" x2="' + (W - pad.r) + '" y2="' + yScale(y) + '" stroke="rgba(0,0,0,.08)" stroke-width="1" />');
+        grid.push('<text x="' + (pad.l - 10) + '" y="' + (yScale(y) + 4) + '" text-anchor="end" font-size="11" fill="#86868b">' + money(y, 0) + '</text>');
+      }
+      for (let x = 0; x <= maxX; x += 5) {
+        grid.push('<line x1="' + xScale(x) + '" y1="' + pad.t + '" x2="' + xScale(x) + '" y2="' + (pad.t + plotH) + '" stroke="rgba(0,0,0,.04)" stroke-width="1" />');
+        grid.push('<text x="' + xScale(x) + '" y="' + (H - 16) + '" text-anchor="middle" font-size="11" fill="#86868b">' + money(x, 0) + '</text>');
+      }
+
+      const currentX = num('llmSlider');
+      const current = scenario(currentX);
+      const roots = findCrossings(maxX);
+      const start = overageStart();
+      const markers = [];
+
+      markers.push('<line x1="' + xScale(currentX) + '" y1="' + pad.t + '" x2="' + xScale(currentX) + '" y2="' + (pad.t + plotH) + '" stroke="#d74f4f" stroke-width="2" stroke-dasharray="5 5" />');
+      markers.push('<circle cx="' + xScale(currentX) + '" cy="' + yScale(current.efSeatCost) + '" r="5.5" fill="#0071e3" stroke="#fff" stroke-width="2" />');
+      markers.push('<circle cx="' + xScale(currentX) + '" cy="' + yScale(current.v2SeatCost) + '" r="5.5" fill="#1f8f5f" stroke="#fff" stroke-width="2" />');
+
+      for (const r of roots) {
+        markers.push('<circle cx="' + xScale(r) + '" cy="' + yScale(scenario(r).efSeatCost) + '" r="4.5" fill="#1d1d1f" />');
+      }
+
+      if (Number.isFinite(start) && start <= maxX) {
+        markers.push('<line x1="' + xScale(start) + '" y1="' + pad.t + '" x2="' + xScale(start) + '" y2="' + (pad.t + plotH) + '" stroke="rgba(0,113,227,.28)" stroke-width="2" />');
+      }
+
+      svg.innerHTML =
+        '<rect x="0" y="0" width="' + W + '" height="' + H + '" rx="18" fill="transparent"></rect>' +
+        grid.join('') +
+        '<path d="' + pathFor('ef') + '" fill="none" stroke="#0071e3" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />' +
+        '<path d="' + pathFor('v2') + '" fill="none" stroke="#1f8f5f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />' +
+        markers.join('') +
+        '<text x="' + (W / 2) + '" y="' + (H - 2) + '" text-anchor="middle" font-size="12" fill="#6e6e73">Monthly raw LLM cost per seat</text>' +
+        '<text x="18" y="' + (H / 2) + '" text-anchor="middle" font-size="12" fill="#6e6e73" transform="rotate(-90 18 ' + (H / 2) + ')">Total monthly cost per seat</text>';
+
+      $('rangeLabel').textContent = 'Chart range: ' + money(0, 0) + ' to ' + money(maxX, 0) + ' monthly LLM cost per seat';
+
+      if (roots.length === 0) {
+        $('crossSummary').textContent = winnerText(scenario(currentX)).short + ' stays cheaper across the displayed range';
+      } else if (roots.length === 1) {
+        $('crossSummary').textContent = 'The models cross once at ' + money(roots[0]);
+      } else {
+        $('crossSummary').textContent = 'The models cross at ' + money(roots[0]) + ' and ' + money(roots[1]);
+      }
+    }
+
+    function update() {
+      const m = num('llmSlider');
+      const s = scenario(m);
+      const roots = findCrossings(40);
+      const start = overageStart();
+      const winner = winnerText(s);
+      const perSeatDelta = s.v2SeatCost - s.efSeatCost;
+
+      $('sliderValue').textContent = money(m);
+      $('winnerText').textContent = winner.title;
+      $('winnerNote').textContent = winner.note;
+      $('deltaText').textContent = (perSeatDelta < 0 ? '-' : '+') + money(Math.abs(perSeatDelta));
+      $('deltaNote').textContent = 'Pricing v2 total minus Enterprise Flex total, per seat per month.';
+      $('cheaperNow').textContent = winner.short;
+      $('cheaperNowSub').textContent =
+        Math.abs(perSeatDelta) < 0.005
+          ? 'The two models are effectively tied at this usage point.'
+          : winner.short + ' is cheaper by ' + money(Math.abs(perSeatDelta)) + ' per seat per month.';
+
+      $('efSeatCost').textContent = money(s.efSeatCost);
+      $('efDetail').textContent = money(s.efPupm) + ' base + ' + money(s.efOverage) + ' overage per seat monthly';
+      $('v2SeatCost').textContent = money(s.v2SeatCost);
+      $('v2Detail').textContent = money(s.v2Platform) + ' platform + ' + money(m * (1 + s.modelHubFee)) + ' usage per seat monthly';
+      $('monthlyDelta').textContent = (s.monthlyDelta < 0 ? '-' : '+') + money0(Math.abs(s.monthlyDelta));
+      $('annualDelta').textContent = (s.annualDelta < 0 ? '-' : '+') + money0(Math.abs(s.annualDelta));
+      $('overageStart').textContent = Number.isFinite(start) ? money(start) : 'Never';
+      $('includedCredits').textContent = whole(s.includedCredits);
+
+      if (roots.length === 0) {
+        $('breakpoints').textContent = 'No crossover in displayed range';
+      } else if (roots.length === 1) {
+        $('breakpoints').textContent = money(roots[0]);
+      } else {
+        $('breakpoints').textContent = money(roots[0]) + ' to ' + money(roots[1]);
+      }
+
+      drawChart(40);
+    }
+
+    ['llmSlider','seats','billablePct','efPupm','v2Platform','baseCreditRate','overageCreditRate','rawCostPerCredit','modelHubFee']
+      .forEach(function(id){
+        $(id).addEventListener('input', update);
+        $(id).addEventListener('change', update);
+      });
+
+    function prepareChartsForPrint() {
+      if (typeof echarts === 'undefined') return;
+      document.querySelectorAll('[_echarts_instance_]').forEach(function(el) {
+        var chart = echarts.getInstanceByDom(el);
+        if (!chart) return;
+        var img = new Image();
+        img.src = chart.getDataURL({ type: 'png', pixelRatio: 2 });
+        img.className = 'print-chart-img';
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:10;';
+        el.dataset.prevPosition = el.style.position;
+        el.style.position = 'relative';
+        el.appendChild(img);
+      });
+    }
+
+    function restoreChartsAfterPrint() {
+      if (typeof echarts === 'undefined') return;
+      document.querySelectorAll('[_echarts_instance_]').forEach(function(el) {
+        var img = el.querySelector('.print-chart-img');
+        if (!img) return;
+        img.remove();
+        el.style.position = el.dataset.prevPosition || '';
+        delete el.dataset.prevPosition;
+      });
+    }
+
+    window.addEventListener('beforeprint', prepareChartsForPrint);
+    window.addEventListener('afterprint', restoreChartsAfterPrint);
+    update();
+  </script>
+</body>
+</html>
